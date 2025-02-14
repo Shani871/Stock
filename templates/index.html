@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Data Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+        }
+        canvas {
+            max-width: 100%;
+        }
+        #stock-info {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Stock Data Analysis</h1>
+
+    <label for="ticker">Enter Stock Symbol:</label>
+    <input type="text" id="ticker" placeholder="e.g. AAPL">
+    <button onclick="fetchStockData()">Get Data</button>
+
+    <h2 id="stock-info"></h2>
+
+    <div class="container">
+        <canvas id="stockChart"></canvas>
+    </div>
+
+    <script>
+        function fetchStockData() {
+            const ticker = document.getElementById("ticker").value.toUpperCase();
+            if (!ticker) {
+                alert("Please enter a stock symbol.");
+                return;
+            }
+
+            fetch(`/api/stock/${ticker}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+
+                    document.getElementById("stock-info").innerHTML = `
+                        <strong>Stock: ${data.ticker}</strong><br>
+                        Latest Close: $${data.latest_close}<br>
+                        EMA 100: $${data.ema_100}<br>
+                        EMA 200: $${data.ema_200}<br>
+                        RSI: ${data.rsi}<br>
+                        Trend: <span style="color:${data.trend === 'Bullish' ? 'green' : 'red'}">${data.trend}</span>
+                    `;
+
+                    updateChart(data.dates, data.closing_prices);
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function updateChart(labels, dataPoints) {
+            const ctx = document.getElementById("stockChart").getContext("2d");
+
+            if (window.stockChart) {
+                window.stockChart.destroy();
+            }
+
+            window.stockChart = new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Closing Prices",
+                        data: dataPoints,
+                        backgroundColor: "blue",
+                        borderColor: "black",
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: { display: true, text: "Date" }
+                        },
+                        y: {
+                            title: { display: true, text: "Price (USD)" }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
